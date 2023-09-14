@@ -1,5 +1,15 @@
 {
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Launch and Debug Client and Server",
+            "configurations": [
+                "Launch and Debug Blazor Client",
+                "Launch and Debug Server"
+            ],
+            "preLaunchTask": "build"
+        }
+    ],
     "configurations": [
         {
             "name": "Launch and Debug Blazor Client",

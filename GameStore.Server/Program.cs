@@ -30,7 +30,19 @@ ReleaseDate = new DateTime(2022, 9, 27)
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.WithOrigins("http://localhost:5116")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
+
+app.UseCors();
 
 app.MapGet("/", () => "Hello World!");
 

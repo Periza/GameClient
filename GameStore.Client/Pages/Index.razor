@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Models
 @inject NavigationManager NavigationManager
+@inject GameClient client;
 
 <PageTitle>Game Catalog</PageTitle>
 
@@ -18,7 +19,7 @@
 }
 else
 {
-    <DeleteGame Game="@currentGame" OnClose="@OnDeleteModalClose">
+    <DeleteGame Game="@currentGame" OnClose="@OnDeleteModalCloseAsync">
     </DeleteGame>
 
     <table class="table table-striped table-bordered table-hover">
@@ -57,9 +58,9 @@ else
     private Game[]? games;
     private Game? currentGame;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        games = GameClient.GetGames();
+        games = await client.GetGamesAsync();
     }
 
     private void CreateGame()
@@ -72,12 +73,12 @@ else
         NavigationManager.NavigateTo($"/game/{id}");
     }
 
-    private void OnDeleteModalClose(bool accepted)
+    private async Task OnDeleteModalCloseAsync(bool accepted)
     {
         if (accepted)
         {
-            GameClient.DeleteGame(currentGame!.Id);
-            games = GameClient.GetGames();
+            await client.DeleteGameAsync(currentGame!.Id);
+            games = await client.GetGamesAsync();
         }
     }
 }
