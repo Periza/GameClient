@@ -1,62 +1,38 @@
+using GameStore.Server.Data;
 using GameStore.Server.Models;
-
-List<Game> games = new List<Game>
-    {
-new Game()
-{
-Id = 1,
-Name = "Street Fighter II",
-Genre = "Fighting",
-Price = 19.99M,
-ReleaseDate = new DateTime(1991, 2, 1)
-},
-new Game()
-{
-Id = 2,
-Name = "Final Fantasy XIV",
-Genre = "Roleplaying",
-Price = 59.99M,
-ReleaseDate = new DateTime(2010, 2, 1)
-},
-new Game()
-{
-Id = 3,
-Name = "FIFA 23",
-Genre = "Fighting",
-Price = 69.99M,
-ReleaseDate = new DateTime(2022, 9, 27)
-}
-};
+using Microsoft.EntityFrameworkCore;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCors(options =>
+builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>
 {
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.WithOrigins("http://localhost:5116")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-    });
-});
+    builder.WithOrigins("http://localhost:5259")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+}));
+
+string connString = "Server=localhost;Port=3306;Database=gamestore;User=root;";
+
+builder.Services.AddDbContext<GameStoreContext>(options => options.UseMySql(connString, ServerVersion.AutoDetect(connString)));
+
+
 var app = builder.Build();
 
 app.UseCors();
 
-app.MapGet("/", () => "Hello World!");
-
-RouteGroupBuilder? group = app.MapGroup("/games")
-                                .WithParameterValidation();
+var group = app.MapGroup("/games")
+               .WithParameterValidation();
 
 // GET /games
-group.MapGet("/", () => games);
+group.MapGet("/", async (GameStoreContext context) =>
+    await context.Games.AsNoTracking().ToListAsync()
+);
 
 // GET /games/{id}
-
-group.MapGet("/{id}", (int id) =>
+group.MapGet("/{id}", async (int id, GameStoreContext context) =>
 {
-    Game? game = games.Find(game => game.Id == id);
+    Game? game = await context.Games.FindAsync(id);
 
     if (game is null)
     {
@@ -68,47 +44,34 @@ group.MapGet("/{id}", (int id) =>
 .WithName("GetGame");
 
 // POST /games
-group.MapPost("/", (Game game) =>
+group.MapPost("/", async (Game game, GameStoreContext context) =>
 {
-    game.Id = games.Max(game => game.Id) + 1;
-    games.Add(game);
+    context.Games.Add(game);
+    await context.SaveChangesAsync();
 
     return Results.CreatedAtRoute("GetGame", new { id = game.Id }, game);
 });
 
 // PUT /games/{id}
-group.MapPut("/{id}", (int id, Game updatedGame) =>
+group.MapPut("/{id}", async (int id, Game updatedGame, GameStoreContext context) =>
 {
-    Game? existingGame = games.Find(game => game.Id == id);
-
-    if (existingGame is null)
-    {
-        updatedGame.Id = id;
-        games.Add(updatedGame);
-        return Results.CreatedAtRoute("GetGame", new { id = updatedGame.Id }, updatedGame);
-    }
-
-    existingGame.Name = updatedGame.Name;
-    existingGame.Genre = updatedGame.Genre;
-    existingGame.Price = updatedGame.Price;
-    existingGame.ReleaseDate = updatedGame.ReleaseDate;
-
-    return Results.NoContent();
-});
+    var rowsAffected = await context.Games.Where(game => game.Id == id).ExecuteUpdateAsync(updates =>
+        updates.SetProperty(game => game.Name, updatedGame.Name)
+                .SetProperty(game => game.Genre, updatedGame.Genre)
+                .SetProperty(game => game.Price, updatedGame.Price)
+                .SetProperty(game => game.ReleaseDate, updatedGame.ReleaseDate)
+                );
+    return rowsAffected == 0 ? Results.NotFound() : Results.NoContent();
+}
+);
 
 // DELETE /games/{id}
-group.MapDelete("/{id}", (int id) =>
+group.MapDelete("/{id}", async (int id, GameStoreContext context) =>
 {
-    Game? game = games.Find(game => game.Id == id);
+    var rowsAffected = await context.Games.Where(game => game.Id == id)
+                                            .ExecuteDeleteAsync();
 
-    if (game is null)
-    {
-        return Results.NotFound();
-    }
-
-    games.Remove(game);
-
-    return Results.NoContent();
+    return rowsAffected == 0 ? Results.NotFound() : Results.NoContent();
 });
 
 app.Run();
