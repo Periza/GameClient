@@ -13,10 +13,7 @@ public class GameClient
     {
         this.httpClient = httpClient;
     }
-    public async Task<Game[]?> GetGamesAsync()
-    {
-        return await httpClient.GetFromJsonAsync<Game[]>("games");
-    }
+    public async Task<Game[]?> GetGamesAsync(string? filter) => await httpClient.GetFromJsonAsync<Game[]>($"games?filter={filter}");
 
     public async Task AddGameAsync(Game game)
     {

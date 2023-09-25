@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:5084
+@baseUrl = http://localhost:5157
 
 GET {{baseUrl}}/games
 
@@ -10,9 +10,9 @@ POST {{baseUrl}}/games
 Content-Type: application/json
 
 {
-    "name": "",
+    "name": "Microsoft",
     "genre": "Kids and Family",
-    "price": 300,
+    "price": 99,
     "releaseDate": "2011-11-18"
 }
 

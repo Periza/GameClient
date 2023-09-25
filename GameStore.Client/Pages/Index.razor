@@ -11,6 +11,11 @@
     <div class="col-sm-6">
         <button type="button" class="btn btn-primary" @onclick="CreateGame">New Game</button>
     </div>
+    <div class="col">
+        <input type="text" class="form-control" placeholder="Search by name or genre" @bind="searchString"
+            @bind:event="oninput" @onkeyup="FetchGamesAsync" />
+
+    </div>
 </div>
 
 @if (games is null)
@@ -46,7 +51,7 @@ else
                         <button class="btn btn-primary" @onclick="(() => EditGame(game.Id))"><i
                                 class="oi oi-pencil"></i></button>
                         <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
-                        @onclick="(() => currentGame = game)"><i class="oi oi-x"></i></button>
+                            @onclick="(() => currentGame = game)"><i class="oi oi-x"></i></button>
                     </td>
                 </tr>
             }
@@ -57,10 +62,11 @@ else
 @code {
     private Game[]? games;
     private Game? currentGame;
+    private string? searchString;
 
     protected override async Task OnInitializedAsync()
     {
-        games = await client.GetGamesAsync();
+        await FetchGamesAsync();
     }
 
     private void CreateGame()
@@ -78,7 +84,12 @@ else
         if (accepted)
         {
             await client.DeleteGameAsync(currentGame!.Id);
-            games = await client.GetGamesAsync();
+            await FetchGamesAsync();
         }
+    }
+
+    private async Task FetchGamesAsync()
+    {
+        games = await client.GetGamesAsync(searchString);
     }
 }

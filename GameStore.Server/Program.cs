@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>
 {
-    builder.WithOrigins("http://localhost:5259")
+    builder.WithOrigins("http://localhost:5116")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
 }));
@@ -15,6 +15,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(builder =>
 string connString = "Server=localhost;Port=3306;Database=gamestore;User=root;";
 
 builder.Services.AddDbContext<GameStoreContext>(options => options.UseMySql(connString, ServerVersion.AutoDetect(connString)));
+
 
 
 var app = builder.Build();
@@ -25,9 +26,17 @@ var group = app.MapGroup("/games")
                .WithParameterValidation();
 
 // GET /games
-group.MapGet("/", async (GameStoreContext context) =>
-    await context.Games.AsNoTracking().ToListAsync()
-);
+group.MapGet("/", async (string? filter, GameStoreContext context) =>
+{
+    var games = context.Games.AsNoTracking();
+
+    if (filter is not null)
+    {
+        games = games.Where(game => game.Name.Contains(filter) || game.Genre.Contains(filter));
+    }
+
+    return await games.ToListAsync();
+});
 
 // GET /games/{id}
 group.MapGet("/{id}", async (int id, GameStoreContext context) =>
